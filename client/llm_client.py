@@ -1,7 +1,9 @@
-from typing import Any
+from typing import Any, AsyncGenerator
 import os
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+
+from client.response import StreamEvent, StreamEventType, TokenUsage
 
 load_dotenv()
 
@@ -11,7 +13,7 @@ class LLMClient:
         self._api_key = os.getenv("API_KEY")
         self._base_url = os.getenv("BASE_URL")
 
-    def _get_client(self) -> AsyncOpenAI:
+    def get_client(self) -> AsyncOpenAI:
         if self._client is None:
             self._client = AsyncOpenAI(
                 api_key=self._api_key, 
@@ -26,17 +28,56 @@ class LLMClient:
             self._client.close()
             self._client = None
     
-    async def _chat_completion(self, message: list[dict[str, Any]], stream: bool = False):
+    async def chat_completion(self, messages: list[dict[str, Any]], stream: bool = False) -> AsyncGenerator[StreamEvent, None]:
+        client = self.get_client()
+
+        kwargs = {
+            "model": "poolside/laguna-xs-2.1:free",
+            "messages": messages,
+            "stream": stream
+        }
+
         if stream:
-            self._stream_response()
+            await self._stream_response(client, kwargs)
         else:
-            self._non_stream_response()
+            event = await self._non_stream_response(client, kwargs)
+            yield event
+        
+        return 
     
     async def _stream_response(self):
         pass
 
-    async def _non_stream_response(self):
-        pass 
+    async def _non_stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]) -> StreamEvent:
+        response = await client.chat.completions.create(**kwargs)
+        choice = response.choices[0]
+        message = choice.message
+
+        text_delta = None
+        if message.content:
+            text_delta = message.content
+        
+        reasoning = None
+        if message.reasoning_details:
+            reasoning = message.reasoning_details[0]["text"]
+
+        token_usage = None
+        if response.usage:
+            token_usage = TokenUsage(
+                model=response.model,
+                prompt_tokens=response.usage.prompt_tokens,
+                completion_tokens=response.usage.completion_tokens,
+                cached_tokens=response.usage.prompt_tokens_details.cached_tokens,
+                total_tokens=response.usage.total_tokens
+            )
+        
+        return StreamEvent(
+            type = StreamEventType.MESSAGE_COMPLETE,
+            text_delta=text_delta,
+            finish_reason=choice.finish_reason,
+            usage=token_usage,
+            reasoning=reasoning
+        )
 
 
 
