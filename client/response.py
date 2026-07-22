@@ -40,3 +40,11 @@ class StreamEvent:
     usage: TokenUsage | None = None
     error: str | None = None
     reasoning: str | None = None
+
+
+    @classmethod
+    def stream_error(error: str):
+        return StreamEvent(
+            type = StreamEventType.ERROR,
+            error = error 
+    )
