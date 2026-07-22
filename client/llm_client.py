@@ -47,6 +47,7 @@ class LLMClient:
                 else:
                     event = await self._non_stream_response(client, kwargs)
                     yield event
+                    
                 return
             except RateLimitError as e:
                 if attempt < self._max_retries:
@@ -54,7 +55,7 @@ class LLMClient:
                     await asyncio.sleep(wait_time)
                 else:
                     yield StreamEvent.stream_error(f"Rate Limit Error: {e}")
-            except APIConnectionError as e:
+            except APIError as e:
                 if attempt < self._max_retries:
                     wait_time = 2 ** attempt
                     await asyncio.sleep(wait_time)
@@ -62,7 +63,8 @@ class LLMClient:
                     yield StreamEvent.stream_error(f"API Connection Error: {e}")
             except APIError as e:
                     yield StreamEvent.stream_error(f"API Error: {e}")
-            return
+
+        return
          
     
     async def _stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]):

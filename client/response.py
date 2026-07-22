@@ -43,7 +43,7 @@ class StreamEvent:
 
 
     @classmethod
-    def stream_error(error: str):
+    def stream_error(cls, error: str):
         return StreamEvent(
             type = StreamEventType.ERROR,
             error = error 
