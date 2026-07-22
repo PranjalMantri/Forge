@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from client.response import StreamEvent, StreamEventType, TokenUsage
+from client.response import StreamEvent, StreamEventType, TextDelta, TokenUsage
 
 load_dotenv()
 
@@ -38,15 +38,55 @@ class LLMClient:
         }
 
         if stream:
-            await self._stream_response(client, kwargs)
+            async for event in self._stream_response(client, kwargs):
+                yield event
         else:
             event = await self._non_stream_response(client, kwargs)
             yield event
         
         return 
     
-    async def _stream_response(self):
-        pass
+    async def _stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]):
+        response = await client.chat.completions.create(**kwargs)
+        
+        usage: TokenUsage | None = None
+        finish_reason: str | None = None
+
+        async for chunk in response:
+            if hasattr(chunk, "usage") and chunk.usage:
+                usage = TokenUsage(
+                    model = chunk.model,
+                    prompt_tokens = chunk.usage.prompt_tokens,
+                    completion_tokens = chunk.usage.completion_tokens,
+                    total_tokens = chunk.usage.total_tokens,
+                    cached_tokens = chunk.usage.prompt_tokens_details.cached_tokens,
+                )
+            
+            reasoning = None
+            if hasattr(chunk, "reasoning_details") and chunk.reasoning_details:
+                reasoning = chunk.reasoning_details[0]["text"]
+
+            if not chunk.choices:
+                continue
+            
+            choice = chunk.choices[0]
+            delta = choice.delta
+
+            if choice.finish_reason:
+                finish_reason = choice.finish_reason
+
+            if delta.content:
+                yield StreamEvent(
+                    type = StreamEventType.TEXT_DELTA,
+                    text_delta=TextDelta(delta.content),
+                    reasoning=reasoning
+                )
+            
+        yield StreamEvent(
+            type = StreamEventType.MESSAGE_COMPLETE,
+            usage = usage,
+            finish_reason = finish_reason
+        )
 
     async def _non_stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]) -> StreamEvent:
         response = await client.chat.completions.create(**kwargs)

@@ -11,7 +11,7 @@ class StreamEventType(str, Enum):
 
 @dataclass
 class TextDelta:
-    content = str
+    content: str
 
     def __str__(self):
         return self.content
