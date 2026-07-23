@@ -1,8 +1,7 @@
+import sys
 from typing import Any
-
-from rich import get_console
+from ui.renderer import get_console
 from agent.agent import Agent
-from client.llm_client import LLMClient
 import asyncio
 import click 
 from agent.events import AgentEventType
@@ -15,22 +14,35 @@ class CLI:
         self.agent: Agent | None = None
         self.ui = UI(console)
     
-    async def single_run(self, message: str):
+    async def single_run(self, message: str) -> str | None:
         async with Agent() as agent:
             self.agent = agent
-            await self._process_message(message)
+            return await self._process_message(message)
 
     async def _process_message(self, message: str):
         if not self.agent:
             return None 
 
+        assistant_streaming = False
+        final_response: str | None = None
+
         async for event in self.agent.run(message):
             if event.type == AgentEventType.TEXT_DELTA:
+                if assistant_streaming == False:
+                    self.ui.begin_assistant()
+                    assistant_streaming = True
+
                 content = event.data.get("content", "")
                 self.ui.stream_assistant_delta(content)
+            elif event.type == AgentEventType.TEXT_COMPLETE:
+                final_response = event.data.get("content", "")
+                self.ui.end_assistant()
+                assistant_streaming = False
             elif event.type == AgentEventType.AGENT_ERROR:
-                self.ui.stream_assistant_delta(f"Something went wrong: {event.data["error"]}")
-            
+                error = event.data["error"] or "Unknown error occurred"
+                self.ui.assistant_error(error)
+
+        return final_response
 
 
 @click.command()
@@ -40,7 +52,10 @@ def main(prompt: str):
     # messages = [{"role": "user", "content": prompt}]
 
     if prompt:
-        asyncio.run(cli.single_run(prompt))
+        result = asyncio.run(cli.single_run(prompt))
+
+        if result is None:
+            sys.exit(1)
         
 
 main()
