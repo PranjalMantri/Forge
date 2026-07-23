@@ -34,9 +34,9 @@ class Agent:
 
     async def _agentic_loop(self) -> AsyncGenerator[AgentEvent, None]:
         messages = [{"role": "user", "content": "How are you doing"}]
+        response_text = ""
         async for event in self.client.chat_completion(messages, True):
 
-            response_text = ""
             if event.type == StreamEventType.TEXT_DELTA:
                 if event.text_delta:
                     content = event.text_delta.content
@@ -45,5 +45,5 @@ class Agent:
             elif event.type == StreamEventType.ERROR:
                 yield AgentEvent.agent_error(event.error or "Unknown error occurred")
 
-            if response_text:
-                yield AgentEvent.text_complete(response_text)
+        if response_text:
+            yield AgentEvent.text_complete(response_text)
