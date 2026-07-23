@@ -55,14 +55,17 @@ class LLMClient:
                     await asyncio.sleep(wait_time)
                 else:
                     yield StreamEvent.stream_error(f"Rate Limit Error: {e}")
+                    return
             except APIConnectionError as e:
                 if attempt < self._max_retries:
                     wait_time = 2 ** attempt
                     await asyncio.sleep(wait_time)
+                    return
                 else:
                     yield StreamEvent.stream_error(f"API Connection Error: {e}")
             except APIError as e:
                 yield StreamEvent.stream_error(f"API Error: {e}")
+                return
 
         return
          
