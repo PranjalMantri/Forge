@@ -24,6 +24,7 @@ class CLI:
             return None 
 
         assistant_streaming = False
+        assitant_reasoning = False
         final_response: str | None = None
 
         async for event in self.agent.run(message):
@@ -38,6 +39,13 @@ class CLI:
                 final_response = event.data.get("content", "")
                 self.ui.end_assistant()
                 assistant_streaming = False
+            elif event.type == AgentEventType.REASONING_DELTA:
+                if not assitant_reasoning:
+                    self.ui.begin_reasoning()
+                    assitant_reasoning = True
+
+                reasoning = event.data.get("content", "")
+                self.ui.stream_assistant_reasoning(reasoning)
             elif event.type == AgentEventType.AGENT_ERROR:
                 error = event.data["error"] or "Unknown error occurred"
                 self.ui.assistant_error(error)

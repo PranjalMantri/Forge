@@ -15,6 +15,8 @@ class AgentEventType(str, Enum):
     TEXT_DELTA = "text_delta"
     TEXT_COMPLETE = "text_complete"
 
+    REASONING_DELTA = "reasoning_delta"
+
 @dataclass
 class AgentEvent:
     type: AgentEventType
@@ -52,5 +54,12 @@ class AgentEvent:
     def text_complete(cls, content: str) -> AgentEvent:
         return cls(
             type = AgentEventType.TEXT_COMPLETE,
+            data = {"content": content}
+        )
+
+    @classmethod
+    def reasoning_delta(cls, content: str) -> AgentEvent:
+        return cls(
+            type = AgentEventType.REASONING_DELTA,
             data = {"content": content}
         )
