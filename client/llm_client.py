@@ -34,7 +34,7 @@ class LLMClient:
         client = self.get_client()
 
         kwargs = {
-            "model": "poolside/laguna-xs-2.1:free",
+            "model": "openai/gpt-oss-20b:free",
             "messages": messages,
             "stream": stream
         }
@@ -85,10 +85,6 @@ class LLMClient:
                     total_tokens = chunk.usage.total_tokens,
                     cached_tokens = chunk.usage.prompt_tokens_details.cached_tokens,
                 )
-            
-            reasoning = None
-            if hasattr(chunk, "reasoning_details") and chunk.reasoning_details:
-                reasoning = chunk.reasoning_details[0]["text"]
 
             if not chunk.choices:
                 continue
@@ -96,14 +92,21 @@ class LLMClient:
             choice = chunk.choices[0]
             delta = choice.delta
 
+            reasoning = getattr(delta, "reasoning", None)
+
             if choice.finish_reason:
                 finish_reason = choice.finish_reason
+
+            if reasoning:
+                yield StreamEvent(
+                    type = StreamEventType.REASONING_DELTA,
+                    reasoning=reasoning
+                )
 
             if delta.content:
                 yield StreamEvent(
                     type = StreamEventType.TEXT_DELTA,
                     text_delta=TextDelta(delta.content),
-                    reasoning=reasoning
                 )
             
         yield StreamEvent(

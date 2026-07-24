@@ -7,6 +7,7 @@ class StreamEventType(str, Enum):
     TEXT_DELTA = "text_delta"
     MESSAGE_COMPLETE = "message_complete"
     ERROR = "error"
+    REASONING_DELTA = "reasoning_delta"
 
 
 @dataclass
