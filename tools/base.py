@@ -29,14 +29,24 @@ class ToolResult:
     output: str
     error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    truncated: bool = False
 
     @classmethod
-    def error(cls, error_message: str, output: str = "") -> ToolResult:
-        return cls(success=False, output=output, error=error_message)
+    def error(cls, error_message: str, output: str = "", **kwargs) -> ToolResult:
+        return cls(success=False, output=output, error=error_message, **kwargs)
 
     @classmethod
-    def success(cls, output: str, **kwargs) -> ToolResult:
-        return cls(success=True, output=output, **kwargs)
+    def success_result(
+        cls, output: str, truncated: bool = False, **kwargs
+    ) -> ToolResult:
+        return cls(success=True, output=output, truncated=truncated, **kwargs)
+
+    def to_model_output(self) -> str:
+        if self.success:
+            return self.output
+
+        if self.error:
+            return f"Error: {self.error}\n\n Output: {self.output}"
 
 
 @dataclass
@@ -110,7 +120,7 @@ class Tool(abc.ABC):
                 "name": self.name,
                 "description": self.description,
                 "parameters": {
-                    "type": "objects",
+                    "type": "object",
                     "properties": json_schema.get("properties", []),
                     "required": json_schema.get("required", []),
                 },
