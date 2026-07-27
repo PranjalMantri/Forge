@@ -3,25 +3,35 @@ from typing import Any
 from ui.renderer import get_console
 from agent.agent import Agent
 import asyncio
-import click 
+import click
 from agent.events import AgentEventType
 from ui.renderer import UI
 
 console = get_console()
 
+
 class CLI:
     def __init__(self):
         self.agent: Agent | None = None
         self.ui = UI(console)
-    
+
     async def single_run(self, message: str) -> str | None:
         async with Agent() as agent:
             self.agent = agent
             return await self._process_message(message)
 
+    def _get_tool_kind(self, tool_name: str) -> str | None:
+        tool_kind = None
+
+        tool = self.agent.tool_registry.get_tool(tool_name)
+        if tool:
+            tool_kind = tool.kind.value
+
+        return tool_kind
+
     async def _process_message(self, message: str):
         if not self.agent:
-            return None 
+            return None
 
         assistant_streaming = False
         assitant_reasoning = False
@@ -49,6 +59,30 @@ class CLI:
             elif event.type == AgentEventType.AGENT_ERROR:
                 error = event.data["error"] or "Unknown error occurred"
                 self.ui.assistant_error(error)
+            elif event.type == AgentEventType.TOOL_CALL_START:
+                tool_name = event.data.get("name", "Unknown tool")
+                tool_kind = self._get_tool_kind(tool_name)
+
+                self.ui.tool_call_start(
+                    call_id=event.data.get("call_id") or "",
+                    name=tool_name,
+                    tool_kind=tool_kind,
+                    arguments=event.data.get("arguments", {}),
+                )
+            elif event.type == AgentEventType.TOOL_CALL_COMPLETE:
+                tool_name = event.data.get("name", "Unknown tool")
+                tool_kind = self._get_tool_kind(tool_name)
+
+                self.ui.tool_call_complete(
+                    call_id=event.data.get("call_id") or "",
+                    name=tool_name,
+                    tool_kind=tool_kind,
+                    success=event.data.get("success", False),
+                    output=event.data.get("output", ""),
+                    truncated=event.data.get("truncated", False),
+                    metadata=event.data.get("metadata"),
+                    error=event.data.get("error"),
+                )
 
         return final_response
 
@@ -57,14 +91,11 @@ class CLI:
 @click.argument("prompt", required=False)
 def main(prompt: str):
     cli = CLI()
-    # messages = [{"role": "user", "content": prompt}]
-
     if prompt:
         result = asyncio.run(cli.single_run(prompt))
 
         if result is None:
             sys.exit(1)
-        
+
 
 main()
-
