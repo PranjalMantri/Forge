@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 from typing import Any
 from ui.renderer import get_console
@@ -20,6 +21,33 @@ class CLI:
             self.agent = agent
             return await self._process_message(message)
 
+    async def interactive_mode(self) -> str | None:
+        self.ui.print_welcome(
+            "AI Agent",
+            lines=[
+                f"model: model name",
+                f"cwd: {Path.cwd()}",
+                "commands: /help /config /approval /model /exit",
+            ],
+        )
+        async with Agent() as agent:
+            self.agent = agent
+
+            while True:
+                try:
+                    user_input = console.input("\n[user]> ").strip()
+
+                    if not user_input:
+                        continue
+
+                    if user_input == "/exit":
+                        break
+
+                    await self._process_message(user_input)
+                except (KeyboardInterrupt, EOFError):
+                    console.print("\n[dim]GoodBye![/dim]")
+                    raise
+
     def _get_tool_kind(self, tool_name: str) -> str | None:
         tool_kind = None
 
@@ -34,7 +62,7 @@ class CLI:
             return None
 
         assistant_streaming = False
-        assitant_reasoning = False
+        assistant_reasoning = False
         final_response: str | None = None
 
         async for event in self.agent.run(message):
@@ -50,9 +78,9 @@ class CLI:
                 self.ui.end_assistant()
                 assistant_streaming = False
             elif event.type == AgentEventType.REASONING_DELTA:
-                if not assitant_reasoning:
+                if not assistant_reasoning:
                     self.ui.begin_reasoning()
-                    assitant_reasoning = True
+                    assistant_reasoning = True
 
                 reasoning = event.data.get("content", "")
                 self.ui.stream_assistant_reasoning(reasoning)
@@ -91,11 +119,17 @@ class CLI:
 @click.argument("prompt", required=False)
 def main(prompt: str):
     cli = CLI()
-    if prompt:
-        result = asyncio.run(cli.single_run(prompt))
-
-        if result is None:
-            sys.exit(1)
+    try:
+        if prompt:
+            asyncio.run(cli.single_run(prompt))
+        else:
+            asyncio.run(cli.interactive_mode())
+    except (KeyboardInterrupt, EOFError, click.Abort):
+        pass
 
 
 main()
+
+
+def test_function(message: str) -> None:
+    return None

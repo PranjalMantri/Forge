@@ -5,6 +5,7 @@ from client.llm_client import LLMClient
 from client.response import StreamEventType, TokenUsage, ToolCall, ToolResultMessage
 from context.context_manager import ContextManager
 from tools.registry import create_default_registry
+import json
 
 
 class Agent:
@@ -67,7 +68,24 @@ class Agent:
                 if event.usage:
                     usage = event.usage
 
-        self.context_manager.add_assistant_message(response_text or None)
+        self.context_manager.add_assistant_message(
+            content=response_text or None,
+            tool_calls=(
+                [
+                    {
+                        "id": tc.call_id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.name,
+                            "arguments": json.dumps(tc.arguments),
+                        },
+                    }
+                    for tc in tool_calls
+                ]
+                if tool_calls
+                else None
+            ),
+        )
 
         if response_text or usage:
             yield AgentEvent.text_complete(response_text, usage)
