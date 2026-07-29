@@ -1,7 +1,6 @@
 import asyncio
 from typing import Any, AsyncGenerator
 import os
-from dotenv import load_dotenv
 from openai import APIConnectionError, APIError, AsyncOpenAI, RateLimitError
 
 from client.response import (
@@ -13,15 +12,15 @@ from client.response import (
     ToolCallDelta,
     parse_tool_call_arguments,
 )
-
-load_dotenv()
+from config.config import Config
 
 
 class LLMClient:
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
         self._client: AsyncOpenAI | None = None
-        self._api_key: str = os.getenv("API_KEY")
-        self._base_url: str = os.getenv("BASE_URL")
+        self.config = config
+        self._api_key: str = self.config.api_key
+        self._base_url: str = self.config.base_url
         self._max_retries: int = 3
 
     def get_client(self) -> AsyncOpenAI:
@@ -60,7 +59,7 @@ class LLMClient:
         client = self.get_client()
 
         kwargs = {
-            "model": "openai/gpt-oss-20b:free",
+            "model": self.config.model_name,
             "messages": messages,
             "stream": stream,
         }

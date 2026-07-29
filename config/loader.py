@@ -12,22 +12,26 @@ logger = logging.getLogger(__name__)
 CONFIG_FILE_NAME = "config.toml"
 AGENT_MD_FILE = "AGENT.md"
 
+
 def get_config_dir(cwd: Path) -> Path:
-    return Path(user_config_dir("AI Coding Agent"))
+    return Path(user_config_dir(".forge"))
+
 
 def get_system_config_file(cwd: Path) -> Path:
     return get_config_dir(cwd) / CONFIG_FILE_NAME
 
+
 def _get_project_config(cwd: Path) -> Path | None:
     current = cwd.resolve()
-    agent_dir = current / "AI Coding Agent"
+    agent_dir = current / ".forge"
 
     if agent_dir.is_dir():
         config_file = agent_dir / CONFIG_FILE_NAME
         if config_file.is_file():
-            return config_file 
+            return config_file
 
     return None
+
 
 def _get_agent_md_file(cwd: Path) -> Path | None:
     current = cwd.resolve()
@@ -40,6 +44,7 @@ def _get_agent_md_file(cwd: Path) -> Path | None:
 
     return None
 
+
 def _merge_dict(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     result = base.copy()
 
@@ -51,15 +56,20 @@ def _merge_dict(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
 
     return result
 
+
 def _parse_toml(path: Path) -> dict[str, Any]:
     try:
         with open(path, "rb") as file:
             return tomli.load(file)
     except tomli.TOMLDecodeError as e:
-        raise ConfigError(f"Invalid toml file in {path}: {e}", config_file=str(path)) from e 
+        raise ConfigError(
+            f"Invalid toml file in {path}: {e}", config_file=str(path)
+        ) from e
     except (OSError, IOError) as e:
-        raise ConfigError(f"Failed to read the fiel {path}: {e}", config_file=str(path)) from e 
-        
+        raise ConfigError(
+            f"Failed to read the fiel {path}: {e}", config_file=str(path)
+        ) from e
+
 
 def load_config(cwd: Path | None) -> Config:
     cwd = cwd or Path.cwd()
@@ -80,7 +90,7 @@ def load_config(cwd: Path | None) -> Config:
             project_config = _parse_toml(project_config_path)
             config_dict = _merge_dict(config_dict, project_config)
         except ConfigError:
-            logger.warning("Skippin invalid system config") 
+            logger.warning("Skipping invalid system config")
 
     if "cwd" not in config_dict:
         config_dict["cwd"] = cwd
@@ -90,9 +100,8 @@ def load_config(cwd: Path | None) -> Config:
         config_dict["developer_instructions"] = agent_md_content
 
     try:
-        config = Config(**config)
+        config = Config(**config_dict)
     except Exception as e:
         raise ConfigError(f"Invalid configuration: {e}")
 
     return config
-

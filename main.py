@@ -1,6 +1,8 @@
 from pathlib import Path
 import sys
 from typing import Any
+from config.config import Config
+from config.loader import load_config
 from ui.renderer import get_console
 from agent.agent import Agent
 import asyncio
@@ -12,12 +14,13 @@ console = get_console()
 
 
 class CLI:
-    def __init__(self):
+    def __init__(self, config: Config):
         self.agent: Agent | None = None
-        self.ui = UI(console)
+        self.ui = UI(config, console)
+        self.config = config
 
     async def single_run(self, message: str) -> str | None:
-        async with Agent() as agent:
+        async with Agent(self.config) as agent:
             self.agent = agent
             return await self._process_message(message)
 
@@ -25,12 +28,12 @@ class CLI:
         self.ui.print_welcome(
             "AI Agent",
             lines=[
-                f"model: model name",
-                f"cwd: {Path.cwd()}",
+                f"model: {self.config.model_name}",
+                f"cwd: {self.config.cwd}",
                 "commands: /help /config /approval /model /exit",
             ],
         )
-        async with Agent() as agent:
+        async with Agent(self.config) as agent:
             self.agent = agent
 
             while True:
@@ -41,6 +44,7 @@ class CLI:
                         continue
 
                     if user_input == "/exit":
+                        console.print("\n[dim]GoodBye![/dim]")
                         break
 
                     await self._process_message(user_input)
@@ -117,8 +121,27 @@ class CLI:
 
 @click.command()
 @click.argument("prompt", required=False)
-def main(prompt: str):
-    cli = CLI()
+@click.option(
+    "--cwd",
+    "-c",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    help="Current working directory",
+)
+def main(prompt: str, cwd: Path | None):
+    try:
+        config = load_config(cwd)
+    except Exception as e:
+        console.print(f"\n[error]Configuration error: {e}[/error]")
+
+    validation_errors = config.validate()
+
+    if validation_errors:
+        for error in validation_errors:
+            console.print(f"\n[error]{error}[/error]")
+
+        sys.exit(1)
+
+    cli = CLI(config)
     try:
         if prompt:
             asyncio.run(cli.single_run(prompt))
@@ -129,7 +152,3 @@ def main(prompt: str):
 
 
 main()
-
-
-def test_function(message: str) -> None:
-    return None

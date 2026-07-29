@@ -92,13 +92,12 @@ class ReadFileTool(Tool):
                 formatted_lines.append(f"{i}| {line}")
 
             output = "\n".join(formatted_lines)
-            token_count = count_tokens(output, "openai/gpt-oss-20b:free")
+            token_count = count_tokens(output)
 
             truncated = False
             if token_count > self.MAX_OUTPUT_TOKENS:
                 output = truncate_text(
                     output,
-                    "openai/gpt-oss-20b:free",
                     suffix=f"\n [Truncated text]",
                     preserve_lines=True,
                     max_tokens=self.MAX_OUTPUT_TOKENS,

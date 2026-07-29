@@ -1,21 +1,25 @@
 from pathlib import Path
 import os
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
-class ModelConfig:
+load_dotenv()
+
+
+class ModelConfig(BaseModel):
     name: str = "openai/gpt-oss-20b:free"
     temperature: float = Field(default=0.7, ge=0, le=2.0)
     context_window: int = 256_000
+
 
 class Config(BaseModel):
     model: ModelConfig = Field(default_factoy=ModelConfig)
     cwd: Path = Field(default_factory=Path.cwd())
 
-    max_turns: int = 100 
-    max_tool_output_tokens: int = 50_000
+    max_turns: int = 100
 
     developer_instructions: str | None = None
-    user_instructions: str | None = None 
+    user_instructions: str | None = None
 
     debug: bool = False
 
@@ -42,7 +46,6 @@ class Config(BaseModel):
     @temperature.setter
     def temperature(self, value: float) -> None:
         self.model.temperature = value
-
 
     def validate(self) -> list[str]:
         errors: list[str] = []
