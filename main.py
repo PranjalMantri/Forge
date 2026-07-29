@@ -55,7 +55,7 @@ class CLI:
     def _get_tool_kind(self, tool_name: str) -> str | None:
         tool_kind = None
 
-        tool = self.agent.tool_registry.get_tool(tool_name)
+        tool = self.agent.session.tool_registry.get_tool(tool_name)
         if tool:
             tool_kind = tool.kind.value
 
