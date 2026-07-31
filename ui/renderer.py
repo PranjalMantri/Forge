@@ -286,6 +286,8 @@ class UI:
         truncated: bool,
         diff: str | None,
     ) -> None:
+        print("diff: ", diff)
+        print("metadata: ", metadata)
         border_style = f"tool.{tool_kind}" if tool_kind else "tool"
         status_icon = "✓" if success else "✗"
         status_style = "success" if success else "error"
@@ -347,15 +349,18 @@ class UI:
                         word_wrap=False,
                     )
                 )
-        elif name == "write_file" and success and diff:
+        elif name in {"write_file", "edit_file"} and success and diff:
             output_line = output.strip() if output.strip() else "Completed"
             blocks.append(Text(output_line, style="muted"))
 
             diff_text = diff
-            diff_display = truncate_text(text=diff_text, model=self.config.model_name, max_tokens=self.max_block_tokens)
+            diff_display = truncate_text(
+                text=diff_text,
+                model=self.config.model_name,
+                max_tokens=self.max_block_tokens,
+            )
 
             blocks.append(Syntax(diff_display, "diff", theme="monokai", word_wrap=True))
-
 
         if truncated:
             blocks.append(Text("note: tool output was truncated", style="warning"))
