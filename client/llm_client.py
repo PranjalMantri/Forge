@@ -69,6 +69,8 @@ class LLMClient:
             kwargs["tool_choice"] = "auto"
 
         for attempt in range(self._max_retries):
+            last_attempt = attempt == self._max_retries
+
             try:
                 if stream:
                     async for event in self._stream_response(client, kwargs):
@@ -79,18 +81,22 @@ class LLMClient:
 
                 return
             except RateLimitError as e:
-                if attempt < self._max_retries:
-                    wait_time = 2**attempt
+                if not last_attempt:
+                    wait_time = 2 ** attempt
+                    print(f"Retrying in {wait_time}s...")
                     await asyncio.sleep(wait_time)
                 else:
+                    print("Retries exhausted")
                     yield StreamEvent.stream_error(f"Rate Limit Error: {e}")
                     return
             except APIConnectionError as e:
-                if attempt < self._max_retries:
-                    wait_time = 2**attempt
+                if not last_attempt:
+                    wait_time = 2 ** attempt
+                    print(f"Retrying in {wait_time}s...")
                     await asyncio.sleep(wait_time)
                 else:
-                    yield StreamEvent.stream_error(f"API Connection Error: {e}")
+                    print("Retries exhausted")
+                    yield StreamEvent.stream_error(f"API Connection error: {e}")
                     return
             except APIError as e:
                 yield StreamEvent.stream_error(f"API Error: {e}")
