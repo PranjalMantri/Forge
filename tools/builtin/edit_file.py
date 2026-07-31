@@ -148,7 +148,6 @@ class EditFileTool(Tool):
             diff_msg = f" ({diff_lines} lines)"
 
         ddiff = FileDiff(path=path, old_content=old_content, new_content=new_content)
-        print("ddiff: ", ddiff)
         return ToolResult.success_result(
             f"Edited {path}: replaced {replace_count} occurrence(s){diff_msg}",
             diff=FileDiff(path=path, old_content=old_content, new_content=new_content),

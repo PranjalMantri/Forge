@@ -65,7 +65,7 @@ class UI:
         self._tool_args_by_call_id: dict[str, dict[str, Any]] = {}
         self.config = config
         self.cwd = self.config.cwd
-        self.max_block_tokens: int = 240
+        self._max_block_tokens: int = 240
 
     def begin_assistant(self) -> None:
         self.console.print()
@@ -285,9 +285,8 @@ class UI:
         metadata: dict[str, Any] | None,
         truncated: bool,
         diff: str | None,
+        exit_code: int | None,
     ) -> None:
-        print("diff: ", diff)
-        print("metadata: ", metadata)
         border_style = f"tool.{tool_kind}" if tool_kind else "tool"
         status_icon = "✓" if success else "✗"
         status_style = "success" if success else "error"
@@ -339,7 +338,7 @@ class UI:
                 output_display = truncate_text(
                     output,
                     "",
-                    self.max_block_tokens,
+                    self._max_block_tokens,
                 )
                 blocks.append(
                     Syntax(
@@ -357,10 +356,33 @@ class UI:
             diff_display = truncate_text(
                 text=diff_text,
                 model=self.config.model_name,
-                max_tokens=self.max_block_tokens,
+                max_tokens=self._max_block_tokens,
             )
 
             blocks.append(Syntax(diff_display, "diff", theme="monokai", word_wrap=True))
+
+        elif name == "shell":
+            command = args.get("command")
+            if isinstance(command, str) and command.strip():
+                blocks.append(Text(f"$ {command.strip()}", style="muted"))
+
+            if exit_code is not None:
+                blocks.append(Text(f"Exit code: {exit_code}", style="muted"))
+
+            output_display = truncate_text(
+                output,
+                self.config.model_name,
+                self._max_block_tokens,
+            )
+
+            blocks.append(
+                Syntax(
+                    output_display,
+                    "text",
+                    theme="monokai",
+                    word_wrap=True,
+                )
+            )
 
         if truncated:
             blocks.append(Text("note: tool output was truncated", style="warning"))

@@ -7,6 +7,8 @@ from pydantic import BaseModel, ValidationError
 from dataclasses import dataclass, field
 from pydantic.json_schema import model_json_schema
 
+from config.config import Config
+
 
 class ToolKind(str, Enum):
     READ = "read"
@@ -22,10 +24,11 @@ class ToolInvocation:
     cwd: Path
     params: dict[str, Any]
 
+
 @dataclass
 class FileDiff:
     path: Path
-    old_content: str 
+    old_content: str
     new_content: str
 
     is_new_file: bool = False
@@ -46,9 +49,12 @@ class FileDiff:
         old_name = "/dev/null" if self.is_new_file else str(self.path)
         new_name = "/dev/null" if self.is_deletion else str(self.path)
 
-        diff = difflib.unified_diff(old_lines, new_lines, fromfile=old_name, tofile=new_name)
+        diff = difflib.unified_diff(
+            old_lines, new_lines, fromfile=old_name, tofile=new_name
+        )
 
         return "".join(diff)
+
 
 @dataclass
 class ToolResult:
@@ -58,6 +64,7 @@ class ToolResult:
     metadata: dict[str, Any] = field(default_factory=dict)
     truncated: bool = False
 
+    exit_code: int | None = None
     diff: FileDiff | None = None
 
     @classmethod
@@ -90,8 +97,8 @@ class Tool(abc.ABC):
     description: str = "Base Tool"
     kind: ToolKind = ToolKind.READ
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, config: Config) -> None:
+        self.config = config
 
     @property
     def schema(self) -> dict[str, Any] | type["BaseModel"]:
