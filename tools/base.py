@@ -22,6 +22,33 @@ class ToolInvocation:
     cwd: Path
     params: dict[str, Any]
 
+@dataclass
+class FileDiff:
+    path: Path
+    old_content: str 
+    new_content: str
+
+    is_new_file: bool = False
+    is_deletion: bool = False
+
+    def create_diff(self):
+        import difflib
+
+        old_lines = self.old_content.splitlines(keepends=True)
+        new_lines = self.new_content.splitlines(keepends=True)
+
+        if old_lines and not old_lines[-1].endswith("\n"):
+            old_lines[-1] += "\n"
+
+        if new_lines and not new_lines[-1].endswith("\n"):
+            new_lines[-1] += "\n"
+
+        old_name = "/dev/null" if self.is_new_file else str(self.path)
+        new_name = "/dev/null" if self.is_deletion else str(self.path)
+
+        diff = difflib.unified_diff(old_lines, new_lines, fromfile=old_name, tofile=new_name)
+
+        return "".join(diff)
 
 @dataclass
 class ToolResult:
@@ -31,8 +58,10 @@ class ToolResult:
     metadata: dict[str, Any] = field(default_factory=dict)
     truncated: bool = False
 
+    diff: FileDiff | None = None
+
     @classmethod
-    def error(cls, error_message: str, output: str = "", **kwargs) -> ToolResult:
+    def error_result(cls, error_message: str, output: str = "", **kwargs) -> ToolResult:
         return cls(success=False, output=output, error=error_message, **kwargs)
 
     @classmethod

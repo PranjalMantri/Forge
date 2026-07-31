@@ -2,7 +2,8 @@ __ALL__ = ["ReadFileTool"]
 
 from tools.base import Tool
 from tools.builtin.read_file import ReadFileTool
+from tools.builtin.write_file import WriteFileTool
 
 
 def get_all_tools() -> list[Tool]:
-    return [ReadFileTool]
+    return [ReadFileTool, WriteFileTool]

@@ -46,14 +46,14 @@ class ToolRegistry:
         tool = self.get_tool(name)
 
         if not tool:
-            return ToolResult.error(
+            return ToolResult.error_result(
                 f"Unknown tool called: {name}", metadata={"tool_name": name}
             )
 
         validation_errors = tool.validate_params(params)
 
         if validation_errors:
-            return ToolResult.error(
+            return ToolResult.error_result(
                 f"Invalid parameters: ({";".join(validation_errors)})",
                 metadata={"tool_name": name, "validation_errors": validation_errors},
             )
@@ -64,7 +64,7 @@ class ToolRegistry:
             result = await tool.execute(invocation)
         except Exception as e:
             logger.exception(f"Tool {name} raised unexpected error")
-            result = ToolResult.error(
+            result = ToolResult.error_result(
                 f"Error while executing tool: {str(e)}",
                 metadata={"tool_name": tool.name},
             )

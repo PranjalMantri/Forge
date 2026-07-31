@@ -18,9 +18,8 @@ def estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
-def count_tokens(text: str, model: str = "gpt-4") -> int:
+def count_tokens(text: str = "", model: str = "gpt-4") -> int:
     tokenizer = get_tokenizer(model)
-
     if tokenizer:
         return len(tokenizer(text))
 
@@ -34,7 +33,7 @@ def truncate_text(
     suffix: str | None = "\n... [Truncated]",
     preserve_lines: bool = True,
 ):
-    tokens = count_tokens(text)
+    tokens = count_tokens(text, model)
     if tokens <= max_tokens:
         return text
 

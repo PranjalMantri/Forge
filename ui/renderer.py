@@ -65,6 +65,7 @@ class UI:
         self._tool_args_by_call_id: dict[str, dict[str, Any]] = {}
         self.config = config
         self.cwd = self.config.cwd
+        self.max_block_tokens: int = 240
 
     def begin_assistant(self) -> None:
         self.console.print()
@@ -127,10 +128,7 @@ class UI:
                     byte_count = len(value.encode("utf-8", errors="replace"))
                     value = f"<{line_count} lines • {byte_count} bytes>"
 
-            if isinstance(value, bool):
-                value = str(value)
-
-            if isinstance(value, int):
+            if isinstance(value, bool) or isinstance(value, int):
                 value = str(value)
 
             table.add_row(key, value)
@@ -286,6 +284,7 @@ class UI:
         error: str | None,
         metadata: dict[str, Any] | None,
         truncated: bool,
+        diff: str | None,
     ) -> None:
         border_style = f"tool.{tool_kind}" if tool_kind else "tool"
         status_icon = "✓" if success else "✗"
@@ -338,7 +337,7 @@ class UI:
                 output_display = truncate_text(
                     output,
                     "",
-                    240,
+                    self.max_block_tokens,
                 )
                 blocks.append(
                     Syntax(
@@ -348,24 +347,15 @@ class UI:
                         word_wrap=False,
                     )
                 )
-        else:
-            if error and not success:
-                blocks.append(Text(error, style="error"))
+        elif name == "write_file" and success and diff:
+            output_line = output.strip() if output.strip() else "Completed"
+            blocks.append(Text(output_line, style="muted"))
 
-            output_display = truncate_text(
-                output, self.config.model_name, self._max_block_tokens
-            )
-            if output_display.strip():
-                blocks.append(
-                    Syntax(
-                        output_display,
-                        "text",
-                        theme="monokai",
-                        word_wrap=True,
-                    )
-                )
-            else:
-                blocks.append(Text("(no output)", style="muted"))
+            diff_text = diff
+            diff_display = truncate_text(text=diff_text, model=self.config.model_name, max_tokens=self.max_block_tokens)
+
+            blocks.append(Syntax(diff_display, "diff", theme="monokai", word_wrap=True))
+
 
         if truncated:
             blocks.append(Text("note: tool output was truncated", style="warning"))

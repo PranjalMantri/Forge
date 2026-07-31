@@ -32,3 +32,6 @@ def is_binary_file(path: str | Path) -> bool:
             return b"\x00" in chunk
     except (OSError, IOError):
         return False
+
+def ensure_parent_directory(path: Path) -> None:
+    return path.parent.mkdir(parents=True, exist_ok=True)

@@ -87,6 +87,7 @@ def _get_agents_md_section() -> str:
     """Generate AGENTS.md spec section."""
     return """# AGENTS.md Specification
 
+- Only read AGENTS.md when you absoutely need it to.
 - Repos often contain AGENTS.md files. These files can appear anywhere within the repository.
 - These files are a way for humans to give you (the agent) instructions or tips for working within the container.
 - Some examples might be: coding conventions, info about how code is organized, or instructions for how to run or test code.
@@ -97,7 +98,6 @@ def _get_agents_md_section() -> str:
     - More-deeply-nested AGENTS.md files take precedence in the case of conflicting instructions.
     - Direct system/developer/user instructions (as part of a prompt) take precedence over AGENTS.md instructions.
 - The contents of the AGENTS.md file at the root of the repo and any directories from the CWD up to the root are included with the developer message and don't need to be re-read. When working in a subdirectory of CWD, or a directory outside the CWD, check for any AGENTS.md files that may be applicable."""
-
 
 def _get_security_section() -> str:
     """Generate security guidelines."""

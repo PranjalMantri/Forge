@@ -42,15 +42,15 @@ class ReadFileTool(Tool):
             path = resolve_path(invocation.cwd, params.path)
 
             if not path:
-                return ToolResult.error(f"File not found: {path}")
+                return ToolResult.error_result(f"File not found: {path}")
 
             if not path.is_file():
-                return ToolResult.error(f"Path is not a file: {path}")
+                return ToolResult.error_result(f"Path is not a file: {path}")
 
             file_size = path.stat().st_size
 
             if file_size > self.MAX_FILE_SIZE:
-                return ToolResult.error(
+                return ToolResult.error_result(
                     f"File is too large to read ({file_size / (1024*1024):.1f} MB)"
                     f"Maximum file size if ({self.MAX_FILE_SIZE / (1024*1024):.0f} MB)"
                 )
@@ -125,4 +125,4 @@ class ReadFileTool(Tool):
                 },
             )
         except Exception as e:
-            return ToolResult.error("Something went wrong in read tool: ", e)
+            return ToolResult.error_result("Something went wrong in read tool: ", e)
