@@ -146,6 +146,7 @@ class UI:
             "glob": ["path", "pattern"],
             "todos": ["id", "action", "content"],
             "memory": ["action", "key", "value"],
+            "web_fetch": ["url", "timeout"],
         }
 
         preferred = _PREFERRED_ORDER.get(tool_name, [])
@@ -451,7 +452,32 @@ class UI:
 
             if summary:
                 blocks.append(Text(" • ".join(summary), style="muted"))
-                
+
+            output_display = truncate_text(
+                output, self.config.model_name, self._max_block_tokens
+            )
+
+            blocks.append(
+                Syntax(output_display, "text", theme="monokai", word_wrap=True)
+            )
+        elif name == "web_fetch" and success:
+            status_code = metadata.get("status_code")
+            content_length = metadata.get("content_length")
+            url = args.get("url")
+            summary = []
+
+            if isinstance(status_code, int):
+                summary.append(str(status_code))
+
+            if isinstance(content_length, int):
+                summary.append(f"{content_length} bytes")
+
+            if isinstance(url, str):
+                summary.append(url)
+
+            if summary:
+                blocks.append(Text(" • ".join(summary), style="muted"))
+
             output_display = truncate_text(
                 output, self.config.model_name, self._max_block_tokens
             )

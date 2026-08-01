@@ -6,7 +6,7 @@ __ALL__ = [
     "ListDirTool",
     "GrepTool",
     "GlobTool",
-    "WebSearchTool"
+    "WebSearchTool" "WebFetchTool",
 ]
 
 from tools.base import Tool
@@ -18,7 +18,18 @@ from tools.builtin.list_dir import ListDirTool
 from tools.builtin.grep import GrepTool
 from tools.builtin.glob import GlobTool
 from tools.builtin.web_search import WebSearchTool
+from tools.builtin.web_fetch import WebFetchTool
 
 
 def get_all_tools() -> list[Tool]:
-    return [ReadFileTool, WriteFileTool, EditFileTool, ShellTool, ListDirTool, GrepTool, GlobTool, WebSearchTool]
+    return [
+        ReadFileTool,
+        WriteFileTool,
+        EditFileTool,
+        ShellTool,
+        ListDirTool,
+        GrepTool,
+        GlobTool,
+        WebSearchTool,
+        WebFetchTool,
+    ]
