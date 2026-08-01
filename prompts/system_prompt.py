@@ -99,6 +99,7 @@ def _get_agents_md_section() -> str:
     - Direct system/developer/user instructions (as part of a prompt) take precedence over AGENTS.md instructions.
 - The contents of the AGENTS.md file at the root of the repo and any directories from the CWD up to the root are included with the developer message and don't need to be re-read. When working in a subdirectory of CWD, or a directory outside the CWD, check for any AGENTS.md files that may be applicable."""
 
+
 def _get_security_section() -> str:
     """Generate security guidelines."""
     return """# Security Guidelines
@@ -123,11 +124,10 @@ def _get_operational_section() -> str:
 ## Tone and Style (CLI Interaction)
 
 - **Concise & Direct:** Adopt a professional, direct, and concise tone suitable for a CLI environment.
-- **Minimal Output:** Aim for fewer than 3 lines of text output (excluding tool use/code generation) per response whenever practical. Focus strictly on the user's query.
 - **Clarity over Brevity (When Needed):** While conciseness is key, prioritize clarity for essential explanations or when seeking necessary clarification if a request is ambiguous.
 - **No Chitchat:** Avoid conversational filler, preambles ("Okay, I will now..."), or postambles ("I have finished the changes..."). Get straight to the action or answer.
 - **Formatting:** Use GitHub-flavored Markdown. Responses will be rendered in monospace NEVER OUTPUT IN LATEX, ONLY GITHUB SUPPORTED MARKDOWN.
-- **Tools vs. Text:** Use tools for actions, text output *only* for communication. Do not add explanatory comments within tool calls or code blocks unless specifically part of the required code/command itself.
+- **Tools vs. Text:** Use tools for actions, text output *only* for communication. Do not add explanatory comments within tool calls or code blocks unless specifically part of the required code/command itself. After tool call completely respond with text to answer the user.
 - **Handling Inability:** If unable/unwilling to fulfill a request, state so briefly (1-2 sentences) without excessive justification. Offer alternatives if appropriate.
 
 ## Primary Workflows

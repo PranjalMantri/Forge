@@ -1,4 +1,11 @@
-__ALL__ = ["ReadFileTool", "WriteFileTool", "EditFileTool", "ShellTool", "ListDirTool"]
+__ALL__ = [
+    "ReadFileTool",
+    "WriteFileTool",
+    "EditFileTool",
+    "ShellTool",
+    "ListDirTool",
+    "GrepTool",
+]
 
 from tools.base import Tool
 from tools.builtin.read_file import ReadFileTool
@@ -6,7 +13,8 @@ from tools.builtin.write_file import WriteFileTool
 from tools.builtin.edit_file import EditFileTool
 from tools.builtin.shell import ShellTool
 from tools.builtin.list_dir import ListDirTool
+from tools.builtin.grep import GrepTool
 
 
 def get_all_tools() -> list[Tool]:
-    return [ReadFileTool, WriteFileTool, EditFileTool, ShellTool, ListDirTool]
+    return [ReadFileTool, WriteFileTool, EditFileTool, ShellTool, ListDirTool, GrepTool]
