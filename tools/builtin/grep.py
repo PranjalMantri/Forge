@@ -91,6 +91,8 @@ class GrepTool(Tool):
         files = []
 
         for root, dirs, filenames in os.walk(search_path):
+            dirs[:] = [d for d in dirs if d not in {"node_modules", ".venv", "venv", "__pycache__"}]
+            
             for filename in filenames:
                 if filename.startswith("."):
                     continue

@@ -44,9 +44,9 @@ def truncate_text(
         return suffix.strip()
 
     if preserve_lines:
-        return _truncate_by_lines(text, target_tokens, suffix)
+        return _truncate_by_lines(text, target_tokens, suffix, model=model)
 
-    return _truncate_by_chars(text, target_tokens, suffix)
+    return _truncate_by_chars(text, target_tokens, suffix, model=model)
 
 
 def _truncate_by_lines(text: str, target_tokens: int, suffix: str, model: str | None):

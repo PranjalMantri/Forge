@@ -425,6 +425,19 @@ class UI:
             blocks.append(
                 Syntax(output_display, "text", theme="monokai", word_wrap=True)
             )
+        elif name == "glob" and success:
+            matches = metadata.get("matches")
+
+            if isinstance(matches, int):
+                blocks.append(Text(f"{matches} matches", style="muted"))
+
+            output_display = truncate_text(
+                output, self.config.model_name, self._max_block_tokens
+            )
+
+            blocks.append(
+                Syntax(output_display, "text", theme="monokai", word_wrap=True)
+            )
 
         if error and not success:
             blocks.append(Text(error, style="error"))
