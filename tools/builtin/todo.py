@@ -19,7 +19,7 @@ class TodoToolParams(BaseModel):
 class TodoTool(Tool):
     name = "todo"
     description = "Manage a task list for the current session. Use this to track progress on multi-step tasks."
-    kind = ToolKind.READ
+    kind = ToolKind.MEMORY
     schema = TodoToolParams
 
     def __init__(self, config: Config) -> None:

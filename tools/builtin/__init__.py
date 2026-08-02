@@ -8,6 +8,7 @@ __ALL__ = [
     "GlobTool",
     "WebSearchTool" "WebFetchTool",
     "TodoTool",
+    "MemoryTool",
 ]
 
 from tools.base import Tool
@@ -21,6 +22,7 @@ from tools.builtin.glob import GlobTool
 from tools.builtin.web_search import WebSearchTool
 from tools.builtin.web_fetch import WebFetchTool
 from tools.builtin.todo import TodoTool
+from tools.builtin.memory import MemoryTool
 
 
 def get_all_tools() -> list[Tool]:
@@ -35,4 +37,5 @@ def get_all_tools() -> list[Tool]:
         WebSearchTool,
         WebFetchTool,
         TodoTool,
+        MemoryTool,
     ]

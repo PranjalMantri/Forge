@@ -13,12 +13,12 @@ CONFIG_FILE_NAME = "config.toml"
 AGENT_MD_FILE = "AGENT.md"
 
 
-def get_config_dir(cwd: Path) -> Path:
-    return Path(user_config_dir(".forge"))
+def get_config_dir() -> Path:
+    return Path(user_config_dir("Forge"))
 
 
 def get_system_config_file(cwd: Path) -> Path:
-    return get_config_dir(cwd) / CONFIG_FILE_NAME
+    return get_config_dir() / CONFIG_FILE_NAME
 
 
 def _get_project_config(cwd: Path) -> Path | None:
