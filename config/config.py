@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from typing import Any
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -11,16 +12,26 @@ class ModelConfig(BaseModel):
     temperature: float = Field(default=0.7, ge=0, le=2.0)
     context_window: int = 256_000
 
+
 class ShellEnvironmentPolicy(BaseModel):
     ignore_default_excludes: bool = False
-    exclude_patterns: list[str] = Field(default_factory=lambda: ["*KEY*", "*TOKEN*", "*SECRET*", "*URL*"])
+    exclude_patterns: list[str] = Field(
+        default_factory=lambda: ["*KEY*", "*TOKEN*", "*SECRET*", "*URL*"]
+    )
     set_vars: dict[str, str] = Field(default_factory=dict)
+
 
 class Config(BaseModel):
     model: ModelConfig = Field(default_factoy=ModelConfig)
     cwd: Path = Field(default_factory=Path.cwd())
-    shell_environment: ShellEnvironmentPolicy = Field(default_factory=ShellEnvironmentPolicy)
+    shell_environment: ShellEnvironmentPolicy = Field(
+        default_factory=ShellEnvironmentPolicy
+    )
     max_turns: int = 100
+
+    allowed_tools: list[str] | None = Field(
+        None, description="If set, only these tools will be available to the agent"
+    )
 
     developer_instructions: str | None = None
     user_instructions: str | None = None
@@ -64,3 +75,6 @@ class Config(BaseModel):
             errors.append(f"Working directory does not exist: {self.cwd}")
 
         return errors
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.model_dump(mode="json")
