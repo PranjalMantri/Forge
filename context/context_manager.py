@@ -72,8 +72,6 @@ class ContextManager:
 
     def get_messages(self) -> list[dict[str, Any]]:
         messages = []
-        # print(self._messages)
-
         if self._system_prompt:
             messages.append({"role": "system", "content": self._system_prompt})
 
