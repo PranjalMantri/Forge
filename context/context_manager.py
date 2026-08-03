@@ -7,13 +7,13 @@ from tools.base import Tool
 from util.text import count_tokens
 from datetime import datetime
 
+
 @dataclass
 class MessageItem:
     role: str
     content: str
     tool_call_id: str | None = None
-    tokenCount: int | None = None
-    tool_call_id: str | None = None
+    token_count: int | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     pruned_at: datetime | None = None
 
@@ -46,7 +46,7 @@ class ContextManager:
         self.PRUNE_MINIMUM_TOKENS = 20000
 
     def set_latest_usage(self, usage: TokenUsage) -> None:
-        self._latest_usage = usage 
+        self._latest_usage = usage
 
     def add_usage(self, usage: TokenUsage) -> None:
         self._total_usage += usage
@@ -88,7 +88,7 @@ class ContextManager:
             - What still needs to be done
 
             I'll continue with the REMAINING tasks only, starting from where we left off."""
-        
+
         ack_item = MessageItem(
             role="assistant",
             content=ack_content,
@@ -118,13 +118,13 @@ class ContextManager:
         pruned_tokens = 0
         to_prune: list[MessageItem] = []
 
-        for msg in sorted(self._messages):
+        for msg in self._messages:
             if msg.role == "tool" and msg.tool_call_id:
                 if msg.pruned_at:
                     break
 
                 tokens = msg.token_count or count_tokens(msg.content, self._model_name)
-                total_tokens += tokens 
+                total_tokens += tokens
 
                 if total_tokens > self.PRUNE_PROTECT_TOKENS:
                     pruned_tokens += tokens
@@ -142,13 +142,12 @@ class ContextManager:
             pruned_count += 1
 
         return pruned_count
-                
 
     def add_user_message(self, content: str) -> None:
         item = MessageItem(
             role="user",
             content=content,
-            tokenCount=count_tokens(content, self._model_name),
+            token_count=count_tokens(content, self._model_name),
         )
 
         self._messages.append(item)
@@ -159,7 +158,7 @@ class ContextManager:
         item = MessageItem(
             role="assistant",
             content=content or "",
-            tokenCount=count_tokens(content or "", self._model_name),
+            token_count=count_tokens(content or "", self._model_name),
             tool_calls=tool_calls,
         )
 
@@ -170,7 +169,7 @@ class ContextManager:
             role="tool",
             content=content,
             tool_call_id=call_id,
-            tokenCount=count_tokens(content, self._model_name),
+            token_count=count_tokens(content, self._model_name),
         )
 
         self._messages.append(item)

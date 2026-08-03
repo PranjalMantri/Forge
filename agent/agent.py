@@ -6,6 +6,7 @@ from client.response import StreamEventType, TokenUsage, ToolCall, ToolResultMes
 from config.config import Config
 import json
 
+from prompts.system_prompt import create_loop_breaker_prompt
 from tools.base import ToolConfirmation
 
 
@@ -113,6 +114,7 @@ class Agent:
 
             if response_text or usage:
                 yield AgentEvent.text_complete(response_text, usage)
+                self.session.loop_detector.record_action("response", text=response_text)
 
             if not tool_calls:
                 if usage:
@@ -127,6 +129,10 @@ class Agent:
                     call_id=tool_call.call_id,
                     name=tool_call.name,
                     arguments=tool_call.arguments,
+                )
+
+                self.session.loop_detector.record_action(
+                    "tool_call", tool_name=tool_call.name, args=tool_call.arguments
                 )
 
                 result = await self.session.tool_registry.invoke(
@@ -152,6 +158,11 @@ class Agent:
                 self.session.context_manager.add_tool_result(
                     call_id=tool_result.tool_call_id, content=tool_result.content
                 )
+
+            loop_detection_error = self.session.loop_detector.check_for_loop()
+            if loop_detection_error:
+                loop_prompt = create_loop_breaker_prompt(loop_detection_error)
+                self.session.context_manager.add_user_message(loop_prompt)
 
             if usage:
                 self.session.context_manager.set_latest_usage(usage)

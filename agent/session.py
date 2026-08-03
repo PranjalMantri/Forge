@@ -11,6 +11,7 @@ from tools.registry import create_default_registry
 from tools.discovery import ToolDiscoveryManager
 from context.compactor import ChatCompactor
 from safety.approval import ApprovalManager
+from context.loop_detector import LoopDetector
 
 
 class Session:
@@ -23,6 +24,7 @@ class Session:
         self.mcp_manager = MCPManager(self.config)
         self.chat_compactor = ChatCompactor(self.client)
         self.approval_manager = ApprovalManager(self.config.approval, self.config.cwd)
+        self.loop_detector = LoopDetector()
         self.config = config
         self.session_id = str(uuid.uuid4())
         self.created_at = datetime.now()
