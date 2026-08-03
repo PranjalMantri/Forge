@@ -5,7 +5,7 @@ from prompts.system_prompt import get_system_prompt
 from dataclasses import dataclass, field
 from tools.base import Tool
 from util.text import count_tokens
-
+from datetime import datetime
 
 @dataclass
 class MessageItem:
@@ -15,6 +15,7 @@ class MessageItem:
     tokenCount: int | None = None
     tool_call_id: str | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    pruned_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {"role": self.role}
@@ -41,6 +42,8 @@ class ContextManager:
         self._model_name = self.config.model_name
         self._latest_usage = TokenUsage()
         self._total_usage = TokenUsage()
+        self.PRUNE_PROTECT_TOKENS = 40000
+        self.PRUNE_MINIMUM_TOKENS = 20000
 
     def set_latest_usage(self, usage: TokenUsage) -> None:
         self._latest_usage = usage 
@@ -105,6 +108,41 @@ class ContextManager:
         )
         self._messages.append(continue_item)
 
+    def prune_tool_outputs(self) -> int:
+        user_count = sum(1 for msg in self._messages if msg.role == "user")
+
+        if user_count < 2:
+            return 0
+
+        total_tokens = 0
+        pruned_tokens = 0
+        to_prune: list[MessageItem] = []
+
+        for msg in sorted(self._messages):
+            if msg.role == "tool" and msg.tool_call_id:
+                if msg.pruned_at:
+                    break
+
+                tokens = msg.token_count or count_tokens(msg.content, self._model_name)
+                total_tokens += tokens 
+
+                if total_tokens > self.PRUNE_PROTECT_TOKENS:
+                    pruned_tokens += tokens
+                    to_prune.append(msg)
+
+        if pruned_tokens < self.PRUNE_MINIMUM_TOKENS:
+            return 0
+
+        pruned_count = 0
+
+        for msg in to_prune:
+            msg.content = "[Old tool result cleared]"
+            msg.token_count = count_tokens(msg.content, self._model_name)
+            msg.pruned_at = datetime.now()
+            pruned_count += 1
+
+        return pruned_count
+                
 
     def add_user_message(self, content: str) -> None:
         item = MessageItem(
