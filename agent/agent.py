@@ -13,6 +13,7 @@ class Agent:
         self.session: Session | None = Session(config)
 
     async def __aenter__(self):
+        await self.session.initialize()
         return self
 
     async def __aexit__(self, exc_type, exc, tb):

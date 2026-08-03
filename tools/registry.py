@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class ToolRegistry:
     def __init__(self, config: Config):
         self._tools: dict[str, Tool] = {}
+        self._mcp_tools: dict[str, Tool] = {}
         self.config = config
 
     def register(self, tool: Tool) -> None:
@@ -20,6 +21,13 @@ class ToolRegistry:
 
         self._tools[tool.name] = tool
         logger.debug(f"Registered tool: {tool.name}")
+
+    def register_mcp_tools(self, tool: Tool) -> None:
+        if tool in self._mcp_tools:
+            logger.warning(f"Overwriting an existing tool: {tool.name}")
+
+        self._mcp_tools[tool.name] = tool
+        logger.debug(f"Registered MCP tool: {tool.name}")
 
     def unregister(self, tool: Tool) -> bool:
         if tool.name in self._tools:
@@ -31,6 +39,8 @@ class ToolRegistry:
     def get_tool(self, name: str) -> Tool | None:
         if name in self._tools:
             return self._tools[name]
+        elif name in self._mcp_tools:
+            return self._mcp_tools[name]
 
         return None
 
@@ -39,6 +49,9 @@ class ToolRegistry:
 
         for tool in self._tools.values():
             tools.append(tool)
+
+        for mcp_tool in self._mcp_tools.values():
+            tools.append(mcp_tool)
 
         if self.config.allowed_tools:
             allowed_tools = set(self.config.allowed_tools)

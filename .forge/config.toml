@@ -1,2 +1,6 @@
 [model]
-name = "inclusionai/ling-3.0-flash:free"
+name = "poolside/laguna-s-2.1:free"
+
+[mcp_servers.filesystem]
+command = "cmd"
+args = ["/c", "C:/Users/pranj/AppData/Roaming/npm/mcp-server-filesystem.cmd", "C:/Users/pranj/Pranjal/Projects/AI Coding Agent"]

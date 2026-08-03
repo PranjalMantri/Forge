@@ -67,7 +67,7 @@ def _parse_toml(path: Path) -> dict[str, Any]:
         ) from e
     except (OSError, IOError) as e:
         raise ConfigError(
-            f"Failed to read the fiel {path}: {e}", config_file=str(path)
+            f"Failed to read the file {path}: {e}", config_file=str(path)
         ) from e
 
 
