@@ -8,9 +8,11 @@ from rich.text import Text
 from rich.markdown import Markdown
 from rich.live import Live
 from rich.table import Table
+from rich.prompt import Prompt
 from rich import box
 from rich.syntax import Syntax
 from config.config import Config
+from tools.base import ToolConfirmation
 from util.paths import display_path_relative_to_cwd
 import re
 
@@ -554,3 +556,41 @@ class UI:
         )
         self.console.print()
         self.console.print(panel)
+
+    def handle_confirmation(self, confirmation: ToolConfirmation) -> bool:
+        output = [
+            Text(confirmation.tool_name, style="tool"),
+            Text(confirmation.description, style="code"),
+        ]
+
+        if confirmation.command:
+            output.append(Text(f"$ {confirmation.command}", style="warning"))
+
+        if confirmation.diff:
+            diff_text = confirmation.diff.create_diff()
+            output.append(
+                Syntax(
+                    diff_text,
+                    "diff",
+                    theme="monokai",
+                    word_wrap=True,
+                )
+            )
+
+        self.console.print()
+        self.console.print(
+            Panel(
+                Group(*output),
+                title=Text("Approval required", style="warning"),
+                title_align="left",
+                border_style="warning",
+                box=box.ROUNDED,
+                padding=(1, 2),
+            )
+        )
+
+        response = Prompt.ask(
+            "\nApprove?", choices=["y", "n", "yes", "no"], default="n"
+        )
+
+        return response.lower() in {"y", "yes"}

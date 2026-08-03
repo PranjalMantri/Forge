@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 import os
-from tools.base import Tool, ToolInvocation, ToolKind, ToolResult
+from tools.base import Tool, ToolConfirmation, ToolInvocation, ToolKind, ToolResult
 from util.paths import resolve_path
 import fnmatch
 import sys
@@ -42,6 +42,29 @@ class ShellTool(Tool):
     description = "Execute a shell command. Use this for running system commands, scripts and CLI tools."
     kind = ToolKind.SHELL
     schema = ShellToolParams
+
+    async def get_confirmation(
+        self, invocation: ToolInvocation
+    ) -> ToolConfirmation | None:
+        params = ShellToolParams(**invocation.params)
+
+        for blocked in BLOCKED_COMMANDS:
+            if blocked in params.command:
+                return ToolConfirmation(
+                    tool_name=self.name,
+                    params=invocation.params,
+                    description=f"Execute (BLOCKED): {params.command}",
+                    command=params.command,
+                    is_dangerous=True,
+                )
+
+        return ToolConfirmation(
+            tool_name=self.name,
+            params=invocation.params,
+            description=f"Execute: {params.command}",
+            command=params.command,
+            is_dangerous=False,
+        )
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         params = ShellToolParams(**invocation.params)

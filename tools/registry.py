@@ -5,6 +5,7 @@ from tools.builtin import get_all_tools
 from tools.base import Tool, ToolInvocation, ToolResult
 import logging
 from tools.subagent import get_default_subagent_definitions, SubAgentTool
+from safety.approval import ApprovalManager, ApprovalContext, ApprovalDecision
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ class ToolRegistry:
         self._tools: dict[str, Tool] = {}
         self._mcp_tools: dict[str, Tool] = {}
         self.config = config
+        self.approval_manager: ApprovalManager | None = None
 
     def register(self, tool: Tool) -> None:
         if tool in self._tools:
@@ -62,7 +64,13 @@ class ToolRegistry:
     def get_schemas(self):
         return [tool.to_openai_schema() for tool in self.get_tools()]
 
-    async def invoke(self, name: str, params: dict[str, Any], cwd: Path) -> ToolResult:
+    async def invoke(
+        self,
+        name: str,
+        params: dict[str, Any],
+        cwd: Path,
+        approval_manager: ApprovalManager,
+    ) -> ToolResult:
         tool = self.get_tool(name)
 
         if not tool:
@@ -79,6 +87,33 @@ class ToolRegistry:
             )
 
         invocation = ToolInvocation(params=params, cwd=cwd)
+
+        if approval_manager:
+            confirmation = await tool.get_confirmation(invocation)
+
+            if confirmation:
+                context = ApprovalContext(
+                    tool_name=tool.name,
+                    params=params,
+                    is_mutating=tool.is_mutating(params),
+                    is_dangerous=confirmation.is_dangerous,
+                    command=confirmation.command,
+                    affected_paths=confirmation.affected_paths,
+                )
+
+                decision = await approval_manager.check_approval(context)
+
+                if decision == ApprovalDecision.REJECTED:
+                    return ToolResult.error_result(
+                        f"Operation rejected by safety policy"
+                    )
+                elif decision == ApprovalDecision.NEEDS_CONFIRMATION:
+                    approved = await approval_manager.request_confirmation(confirmation)
+
+                    if not approved:
+                        return ToolResult.error_result(
+                            f"User rejected the operation due to safety reasons"
+                        )
 
         try:
             result = await tool.execute(invocation)

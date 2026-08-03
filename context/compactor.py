@@ -5,9 +5,10 @@ from client.response import StreamEventType, TokenUsage
 from context.context_manager import ContextManager
 from prompts.system_prompt import get_compression_prompt
 
+
 class ChatCompactor:
-    def __int__(self, client: LLMClient):
-        self.client = client 
+    def __init__(self, client: LLMClient):
+        self.client = client
 
     def _format_history_for_compaction(self, messages: list[dict[str, Any]]) -> str:
         output = ["Here is the conversation that needs to be continued: \n"]
@@ -56,31 +57,26 @@ class ChatCompactor:
 
         return "\n\n---\n\n".join(output)
 
-
-
-
-    async def compress(self, context_manager: ContextManager) -> tuple[str | None, TokenUsage | None]:
+    async def compress(
+        self, context_manager: ContextManager
+    ) -> tuple[str | None, TokenUsage | None]:
         messages = context_manager.get_messages()
 
         if len(messages) < 3:
-            return None, None 
+            return None, None
 
         compression_messages = [
-            {
-                "role": "system",
-                "content": get_compression_prompt()
-            },
-            {
-                "role": "user",
-                "content": self._format_history_for_compaction(messages)
-            }
+            {"role": "system", "content": get_compression_prompt()},
+            {"role": "user", "content": self._format_history_for_compaction(messages)},
         ]
 
         try:
             summary: str = ""
             usage: TokenUsage | None = None
 
-            async for event in self.client.chat_completion(messages=compression_messages, stream=False):
+            async for event in self.client.chat_completion(
+                messages=compression_messages, stream=False
+            ):
                 if event.type == StreamEventType.MESSAGE_COMPLETE:
                     summary += event.text_delta
                     usage = event.get("usage")

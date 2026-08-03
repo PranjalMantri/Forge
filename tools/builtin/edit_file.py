@@ -2,7 +2,14 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from tools.base import FileDiff, Tool, ToolInvocation, ToolKind, ToolResult
+from tools.base import (
+    FileDiff,
+    Tool,
+    ToolConfirmation,
+    ToolInvocation,
+    ToolKind,
+    ToolResult,
+)
 from util.paths import ensure_parent_directory, resolve_path
 
 
@@ -35,7 +42,7 @@ class EditFileTool(Tool):
     kind = ToolKind.WRITE
     schema = EditToolParams
 
-    def _no_math_error(
+    def _no_match_error(
         self, old_string: str, old_content: str, path: Path
     ) -> ToolResult:
         lines = old_content.splitlines()
@@ -70,6 +77,58 @@ class EditFileTool(Tool):
             )
 
         return ToolResult.error_result(error_message)
+
+    async def get_confirmation(
+        self, invocation: ToolInvocation
+    ) -> ToolConfirmation | None:
+        params = EditToolParams(**invocation.params)
+        path = resolve_path(invocation.cwd, params.path)
+
+        is_new_file = not path.exists()
+
+        if is_new_file:
+            diff = FileDiff(
+                path=path,
+                old_content="",
+                new_content=params.new_string,
+                is_new_file=True,
+            )
+
+            return ToolConfirmation(
+                tool_name=self.name,
+                params=invocation.params,
+                description=f"Create new file: {path}",
+                diff=diff,
+                affected_paths=[path],
+                is_dangerous=False,
+            )
+
+        old_content = ""
+        try:
+            old_content = path.read_text(encoding="utf-8")
+        except:
+            pass
+
+        if params.replace_all:
+            new_content = old_content.replace(params.old_string, params.new_string)
+        else:
+            new_content = old_content.replace(params.old_string, params.new_string, 1)
+
+        diff = FileDiff(
+            path=path,
+            old_content=old_content,
+            new_content=new_content,
+            is_new_file=False,
+        )
+
+        return ToolConfirmation(
+            tool_name=self.name,
+            params=invocation.params,
+            description=f"Edit file: {path}",
+            diff=diff,
+            affected_paths=[path],
+            is_dangerous=False,
+        )
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         params = EditToolParams(**invocation.params)

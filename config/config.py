@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum
 from pathlib import Path
 import os
 from typing import Any
@@ -12,6 +13,7 @@ class ModelConfig(BaseModel):
     name: str = "openai/gpt-oss-20b:free"
     temperature: float = Field(default=0.7, ge=0, le=2.0)
     context_window: int = 256_000
+
 
 class MCPServerConfig(BaseModel):
     enabled: bool = True
@@ -28,15 +30,19 @@ class MCPServerConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_transport(self) -> MCPServerConfig:
-        has_command = self.command is not None 
+        has_command = self.command is not None
         has_url = self.url is not None
 
         if not has_command and not has_url:
-            raise ValueError(f"MCP Server requires either command(stdio) or url(http/sse)")
+            raise ValueError(
+                f"MCP Server requires either command(stdio) or url(http/sse)"
+            )
 
         if has_command and has_url:
-            raise ValueError(f"MCP Server cannot have both command(stdio) or url(http/sse)")
-        
+            raise ValueError(
+                f"MCP Server cannot have both command(stdio) or url(http/sse)"
+            )
+
         return self
 
 
@@ -48,6 +54,15 @@ class ShellEnvironmentPolicy(BaseModel):
     set_vars: dict[str, str] = Field(default_factory=dict)
 
 
+class ApprovalPolicy(str, Enum):
+    ON_REQUEST = "on_request"
+    ON_FAILURE = "on_failure"
+    AUTO = "auto"
+    AUTO_EDIT = "auto_edit"
+    NEVER = "never"
+    YOLO = "yolo"
+
+
 class Config(BaseModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     cwd: Path = Field(default_factory=Path.cwd)
@@ -56,6 +71,7 @@ class Config(BaseModel):
     )
     max_turns: int = 100
     mcp_servers: dict[str, MCPServerConfig] = Field(default_factory=dict)
+    approval: ApprovalPolicy = ApprovalPolicy.ON_REQUEST
 
     allowed_tools: list[str] | None = Field(
         None, description="If set, only these tools will be available to the agent"

@@ -1,16 +1,23 @@
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Callable
 from agent.events import AgentEvent, AgentEventType
 from agent.session import Session
 from client.response import StreamEventType, TokenUsage, ToolCall, ToolResultMessage
 from config.config import Config
 import json
 
+from tools.base import ToolConfirmation
+
 
 class Agent:
-    def __init__(self, config: Config):
+    def __init__(
+        self,
+        config: Config,
+        confirmation_callback: Callable[[ToolConfirmation], bool] | None = None,
+    ):
         self.config = config
         self.session: Session | None = Session(config)
+        self.session.approval_manager.confirmation_callback = confirmation_callback
 
     async def __aenter__(self):
         await self.session.initialize()
@@ -48,7 +55,9 @@ class Agent:
 
             # check for context overflow here before calling the LLM
             if self.session.context_manager.needs_compression():
-                summary, usage = await self.session.chat_compactor.compress(self.session.context_manager)
+                summary, usage = await self.session.chat_compactor.compress(
+                    self.session.context_manager
+                )
 
                 if summary:
                     self.session.context_manager.replace_with_summary(summary)
@@ -121,7 +130,10 @@ class Agent:
                 )
 
                 result = await self.session.tool_registry.invoke(
-                    name=tool_call.name, params=tool_call.arguments, cwd=Path.cwd()
+                    name=tool_call.name,
+                    params=tool_call.arguments,
+                    cwd=Path.cwd(),
+                    approval_manager=self.session.approval_manager,
                 )
 
                 yield AgentEvent.tool_call_complete(
@@ -146,6 +158,5 @@ class Agent:
                 self.session.context_manager.add_usage(usage)
 
             self.session.context_manager.prune_tool_outputs()
-
 
         yield AgentEvent.agent_error(f"Maximum turns ({max_turns}) reached")

@@ -10,16 +10,19 @@ from tools.mcp.mcp_manager import MCPManager
 from tools.registry import create_default_registry
 from tools.discovery import ToolDiscoveryManager
 from context.compactor import ChatCompactor
+from safety.approval import ApprovalManager
+
 
 class Session:
     def __init__(self, config: Config):
         self.client = LLMClient(config)
         self.config = config
         self.tool_registry = create_default_registry(self.config)
-        
+
         self.discovery_manager = ToolDiscoveryManager(self.config, self.tool_registry)
         self.mcp_manager = MCPManager(self.config)
-        self.chat_compactor = ChatCompactor(self.config)
+        self.chat_compactor = ChatCompactor(self.client)
+        self.approval_manager = ApprovalManager(self.config.approval, self.config.cwd)
         self.config = config
         self.session_id = str(uuid.uuid4())
         self.created_at = datetime.now()
@@ -38,6 +41,7 @@ class Session:
             user_memory=self._load_memory(),
             tools=self.tool_registry.get_tools(),
         )
+
     def _load_memory(self) -> str | None:
         config_dir = get_config_dir()
         config_dir.mkdir(parents=True, exist_ok=True)
