@@ -46,6 +46,15 @@ class Agent:
             response_text = ""
             usage: TokenUsage | None = None
 
+            # check for context overflow here before calling the LLM
+            if self.session.context_manager.needs_compression():
+                summary, usage = await self.session.chat_compactor.compress(self.session.context_manager)
+
+                if summary:
+                    self.session.context_manager.replace_with_summary(summary)
+                    self.session.context_manager.set_latest_usage(usage)
+                    self.session.context_manager.add_usage(usage)
+
             tools_schema = self.session.tool_registry.get_schemas()
             tool_calls: list[ToolCall] = []
             tool_call_results: list[ToolResultMessage] = []
@@ -97,6 +106,9 @@ class Agent:
                 yield AgentEvent.text_complete(response_text, usage)
 
             if not tool_calls:
+                if usage:
+                    self.session.context_manager.add_usage(usage)
+                    self.session.context_manager.set_latest_usage(usage)
                 return
 
             for tool_call in tool_calls:
@@ -121,6 +133,10 @@ class Agent:
                         is_error=not result.success,
                     )
                 )
+
+                if usage:
+                    self.session.context_manager.add_usage(usage)
+                    self.session.context_manager.set_latest_usage(usage)
 
             for tool_result in tool_call_results:
                 self.session.context_manager.add_tool_result(
