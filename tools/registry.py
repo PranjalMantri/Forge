@@ -17,6 +17,10 @@ class ToolRegistry:
         self.config = config
         self.approval_manager: ApprovalManager | None = None
 
+    @property
+    def connected_mcp_servers(self) -> list[Tool]:
+        return self._mcp_tools.values()
+
     def register(self, tool: Tool) -> None:
         if tool in self._tools:
             logger.warning(f"Overwriting an existing tool: {tool.name}")

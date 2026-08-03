@@ -41,15 +41,19 @@ class ContextManager:
         self.config = config
         self._model_name = self.config.model_name
         self._latest_usage = TokenUsage()
-        self._total_usage = TokenUsage()
+        self.total_usage = TokenUsage()
         self.PRUNE_PROTECT_TOKENS = 40000
         self.PRUNE_MINIMUM_TOKENS = 20000
 
+    @property
+    def message_count(self) -> int:
+        return len(self._messages)
+    
     def set_latest_usage(self, usage: TokenUsage) -> None:
         self._latest_usage = usage
 
     def add_usage(self, usage: TokenUsage) -> None:
-        self._total_usage += usage
+        self.total_usage += usage
 
     def needs_compression(self):
         current_tokens = self._latest_usage.total_tokens
@@ -183,3 +187,6 @@ class ContextManager:
             messages.append(item.to_dict())
 
         return messages
+
+    def clear(self) -> None:
+        self._messages = []

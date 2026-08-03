@@ -30,7 +30,7 @@ class Session:
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
 
-        self._turn_count: int = 0
+        self.turn_count: int = 0
 
     async def initialize(self) -> None:
         await self.mcp_manager.initialize()
@@ -69,7 +69,19 @@ class Session:
             return None
 
     def increment_turn(self) -> int:
-        self._turn_count += 1
+        self.turn_count += 1
         self.updated_at = datetime.now()
 
-        return self._turn_count
+        return self.turn_count
+
+
+    def get_stats(self) -> dict[str, Any]:
+        return {
+            "session_id": self.session_id,
+            "created_at": self.created_at.isoformat(),
+            "turn_count": self.turn_count,
+            "message_count": self.context_manager.message_count,
+            "token_usage": self.context_manager.total_usage,
+            "tools_count": len(self.tool_registry.get_tools()),
+            "mcp_servers": len(self.tool_registry.connected_mcp_servers),
+        }
