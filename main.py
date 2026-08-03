@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 from typing import Any
+from agent.session import Session
 from config.config import ApprovalPolicy, Config
 from config.loader import load_config
 from ui.renderer import get_console
@@ -9,6 +10,7 @@ import asyncio
 import click
 from agent.events import AgentEventType
 from ui.renderer import UI
+from agent.persistence import PersistenceManager, SessionSnapshot
 
 console = get_console()
 
@@ -187,82 +189,82 @@ class CLI:
                 console.print(
                     f"  • {server['name']}: [{status_color}]{status}[/{status_color}] ({server['tools']} tools)"
                 )
-        # elif cmd_name == "/save":
-        #     persistence_manager = PersistenceManager()
-        #     session_snapshot = SessionSnapshot(
-        #         session_id=self.agent.session.session_id,
-        #         created_at=self.agent.session.created_at,
-        #         updated_at=self.agent.session.updated_at,
-        #         turn_count=self.agent.session.turn_count,
-        #         messages=self.agent.session.context_manager.get_messages(),
-        #         total_usage=self.agent.session.context_manager.total_usage,
-        #     )
-        #     persistence_manager.save_session(session_snapshot)
-        #     console.print(
-        #         f"[success]Session saved: {self.agent.session.session_id}[/success]"
-        #     )
-        # elif cmd_name == "/sessions":
-        #     persistence_manager = PersistenceManager()
-        #     sessions = persistence_manager.list_sessions()
-        #     console.print("\n[bold]Saved Sessions[/bold]")
-        #     for s in sessions:
-        #         console.print(
-        #             f"  • {s['session_id']} (turns: {s['turn_count']}, updated: {s['updated_at']})"
-        #         )
-        # elif cmd_name == "/resume":
-        #     if not cmd_args:
-        #         console.print(f"[error]Usage: /resume <session_id> [/error]")
-        #     else:
-        #         persistence_manager = PersistenceManager()
-        #         snapshot = persistence_manager.load_session(cmd_args)
-        #         if not snapshot:
-        #             console.print(f"[error]Session does not exist [/error]")
-        #         else:
-        #             session = Session(
-        #                 config=self.config,
-        #             )
-        #             await session.initialize()
-        #             session.session_id = snapshot.session_id
-        #             session.created_at = snapshot.created_at
-        #             session.updated_at = snapshot.updated_at
-        #             session.turn_count = snapshot.turn_count
-        #             session.context_manager.total_usage = snapshot.total_usage
+        elif cmd_name == "/save":
+            persistence_manager = PersistenceManager()
+            session_snapshot = SessionSnapshot(
+                session_id=self.agent.session.session_id,
+                created_at=self.agent.session.created_at,
+                updated_at=self.agent.session.updated_at,
+                turn_count=self.agent.session.turn_count,
+                messages=self.agent.session.context_manager.get_messages(),
+                total_usage=self.agent.session.context_manager.total_usage,
+            )
+            persistence_manager.save_session(session_snapshot)
+            console.print(
+                f"[success]Session saved: {self.agent.session.session_id}[/success]"
+            )
+        elif cmd_name == "/sessions":
+            persistence_manager = PersistenceManager()
+            sessions = persistence_manager.list_sessions()
+            console.print("\n[bold]Saved Sessions[/bold]")
+            for s in sessions:
+                console.print(
+                    f"  • {s['session_id']} (turns: {s['turn_count']}, updated: {s['updated_at']})"
+                )
+        elif cmd_name == "/resume":
+            if not cmd_args:
+                console.print(f"[error]Usage: /resume <session_id> [/error]")
+            else:
+                persistence_manager = PersistenceManager()
+                snapshot = persistence_manager.load_session(cmd_args)
+                if not snapshot:
+                    console.print(f"[error]Session does not exist [/error]")
+                else:
+                    session = Session(
+                        config=self.config,
+                    )
+                    await session.initialize()
+                    session.session_id = snapshot.session_id
+                    session.created_at = snapshot.created_at
+                    session.updated_at = snapshot.updated_at
+                    session.turn_count = snapshot.turn_count
+                    session.context_manager.total_usage = snapshot.total_usage
 
-        #             for msg in snapshot.messages:
-        #                 if msg.get("role") == "system":
-        #                     continue
-        #                 elif msg["role"] == "user":
-        #                     session.context_manager.add_user_message(
-        #                         msg.get("content", "")
-        #                     )
-        #                 elif msg["role"] == "assistant":
-        #                     session.context_manager.add_assistant_message(
-        #                         msg.get("content", ""), msg.get("tool_calls")
-        #                     )
-        #                 elif msg["role"] == "tool":
-        #                     session.context_manager.add_tool_result(
-        #                         msg.get("tool_call_id", ""), msg.get("content", "")
-        #                     )
+                    for msg in snapshot.messages:
+                        if msg.get("role") == "system":
+                            continue
+                        elif msg["role"] == "user":
+                            session.context_manager.add_user_message(
+                                msg.get("content", "")
+                            )
+                        elif msg["role"] == "assistant":
+                            session.context_manager.add_assistant_message(
+                                msg.get("content", ""), msg.get("tool_calls")
+                            )
+                        elif msg["role"] == "tool":
+                            session.context_manager.add_tool_result(
+                                msg.get("tool_call_id", ""), msg.get("content", "")
+                            )
 
-        #             await self.agent.session.client.close()
-        #             await self.agent.session.mcp_manager.shutdown()
+                    await self.agent.session.client.close()
+                    await self.agent.session.mcp_manager.shutdown()
 
-        #             self.agent.session = session
-        #             console.print(
-        #                 f"[success]Resumed session: {session.session_id}[/success]"
-        #             )
-        # elif cmd_name == "/checkpoint":
-        #     persistence_manager = PersistenceManager()
-        #     session_snapshot = SessionSnapshot(
-        #         session_id=self.agent.session.session_id,
-        #         created_at=self.agent.session.created_at,
-        #         updated_at=self.agent.session.updated_at,
-        #         turn_count=self.agent.session.turn_count,
-        #         messages=self.agent.session.context_manager.get_messages(),
-        #         total_usage=self.agent.session.context_manager.total_usage,
-        #     )
-        #     checkpoint_id = persistence_manager.save_checkpoint(session_snapshot)
-        #     console.print(f"[success]Checkpoint created: {checkpoint_id}[/success]")
+                    self.agent.session = session
+                    console.print(
+                        f"[success]Resumed session: {session.session_id}[/success]"
+                    )
+        elif cmd_name == "/checkpoint":
+            persistence_manager = PersistenceManager()
+            session_snapshot = SessionSnapshot(
+                session_id=self.agent.session.session_id,
+                created_at=self.agent.session.created_at,
+                updated_at=self.agent.session.updated_at,
+                turn_count=self.agent.session.turn_count,
+                messages=self.agent.session.context_manager.get_messages(),
+                total_usage=self.agent.session.context_manager.total_usage,
+            )
+            checkpoint_id = persistence_manager.save_checkpoint(session_snapshot)
+            console.print(f"[success]Checkpoint created: {checkpoint_id}[/success]")
         # elif cmd_name == "/restore":
         #     if not cmd_args:
         #         console.print(f"[error]Usage: /restire <checkpoint_id> [/error]")

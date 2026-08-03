@@ -3,7 +3,7 @@ from typing import Any
 
 import tomli
 from config.config import Config
-from platformdirs import user_config_dir
+from platformdirs import user_config_dir, user_data_dir
 from util.errors import ConfigError
 import logging
 
@@ -16,6 +16,8 @@ AGENT_MD_FILE = "AGENT.md"
 def get_config_dir() -> Path:
     return Path(user_config_dir("Forge"))
 
+def get_data_dir() -> Path:
+    return Path(user_data_dir("Forge"))
 
 def get_system_config_file(cwd: Path) -> Path:
     return get_config_dir() / CONFIG_FILE_NAME
