@@ -57,13 +57,6 @@ An AI agent that can execute tasks using tools and manage conversations.
 - Detects repeating actions
 - Prevents infinite loops in agent execution
 
-### Hooks System
-
-- Execute scripts before/after agent runs
-- Execute scripts before/after tool calls
-- Error handling hooks
-- Custom commands and scripts
-
 ### Configuration
 
 - Configurable working directory
